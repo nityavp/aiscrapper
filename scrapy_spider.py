@@ -1,5 +1,8 @@
 import scrapy
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import CrawlerProcess, CrawlerRunner
+from twisted.internet import reactor, defer
+from scrapy.utils.log import configure_logging
+from scrapy.utils.project import get_project_settings
 
 class MySpider(scrapy.Spider):
     name = 'my_spider'
@@ -19,13 +22,13 @@ class MySpider(scrapy.Spider):
         })
 
 def run_spider(urls):
-    process = CrawlerProcess(settings={
-        "LOG_LEVEL": "ERROR"
-    })
-    spider = MySpider(urls=urls)
-    process.crawl(MySpider, urls=urls)
-    process.start()  # the script will block here until the crawling is finished
-    return spider.results
+    configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
+    runner = CrawlerRunner(get_project_settings())
+    d = runner.crawl(MySpider, urls=urls)
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run()  # the script will block here until the crawling is finished
+    return runner.spider.results
+
 
 
 
