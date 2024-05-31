@@ -2,7 +2,7 @@ import streamlit as st
 from scrapegraphai.graphs import SmartScraperGraph
 import pandas as pd
 from io import BytesIO
-
+subprocess.run(["playwright", "install"], check=True)
 # Set up the Streamlit app
 st.title("Web Scraping AI Agent 🕵️‍♂️")
 st.caption("This app allows you to scrape multiple websites using OpenAI API and export results to Excel")
