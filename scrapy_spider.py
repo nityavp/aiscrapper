@@ -23,9 +23,10 @@ def run_spider(urls):
         "LOG_LEVEL": "ERROR"
     })
     spider = MySpider(urls=urls)
-    process.crawl(spider)
+    process.crawl(MySpider, urls=urls)
     process.start()  # the script will block here until the crawling is finished
     return spider.results
+
 
 
 
