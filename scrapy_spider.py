@@ -20,3 +20,4 @@ class MySpider(scrapy.Spider):
 
     def closed(self, reason):
         self.crawler.stats.set_value('results', self.results)
+
