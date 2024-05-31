@@ -1,9 +1,8 @@
 import streamlit as st
-import subprocess
-from scrapegraphai.graphs import SmartScraperGraph
 import pandas as pd
 from io import BytesIO
-subprocess.run(["playwright", "install"], check=True)
+from scrapegraphai.graphs import SmartScraperGraph
+
 # Set up the Streamlit app
 st.title("Web Scraping AI Agent 🕵️‍♂️")
 st.caption("This app allows you to scrape multiple websites using OpenAI API and export results to Excel")
@@ -48,15 +47,21 @@ if openai_access_token:
                 for i, scraper in enumerate(smart_scrapers):
                     try:
                         result = scraper.run()
-                        results.append(result)
+                        results.append({"URL": url_list[i], "Data": result})
                     except Exception as e:
                         st.error(f"Error processing {url_list[i]}: {e}")
                 
                 # Create a DataFrame and export to Excel
                 if results:
-                    df = pd.DataFrame(results)
+                    data_frames = []
+                    for result in results:
+                        df = pd.json_normalize(result["Data"])
+                        df["URL"] = result["URL"]
+                        data_frames.append(df)
+                    
+                    final_df = pd.concat(data_frames, ignore_index=True)
                     output = BytesIO()
-                    df.to_excel(output, index=False)
+                    final_df.to_excel(output, index=False)
                     output.seek(0)
                     
                     st.download_button(
