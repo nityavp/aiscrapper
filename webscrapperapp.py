@@ -1,6 +1,4 @@
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
 from scrapegraphai.graphs import SmartScraperGraph
 import pandas as pd
 from io import BytesIO
@@ -17,7 +15,7 @@ if openai_access_token:
         "Select the model",
         ["gpt-3.5-turbo", "gpt-4"],
         index=0,
-    )
+    )    
     graph_config = {
         "llm": {
             "api_key": openai_access_token,
@@ -30,17 +28,6 @@ if openai_access_token:
     # Get the user prompts
     prompts = st.text_area("Enter the prompts for each website, separated by commas (in the same order as the URLs)")
     
-    # Function to get HTML content
-    def get_html_content(url):
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            st.error(f"Error fetching {url}: {e}")
-            return None
-    
-    # Create SmartScraperGraph objects for each URL and prompt
     if urls and prompts:
         url_list = [url.strip() for url in urls.split(",")]
         prompt_list = [prompt.strip() for prompt in prompts.split(",")]
@@ -48,6 +35,7 @@ if openai_access_token:
         if len(url_list) != len(prompt_list):
             st.error("The number of URLs and prompts must be equal.")
         else:
+            # Create SmartScraperGraph objects for each URL and prompt
             smart_scrapers = [
                 SmartScraperGraph(prompt=prompt, source=url, config=graph_config)
                 for url, prompt in zip(url_list, prompt_list)
@@ -56,19 +44,12 @@ if openai_access_token:
             # Scrape the websites
             if st.button("Scrape"):
                 results = []
-                for i, (url, prompt) in enumerate(zip(url_list, prompt_list)):
-                    if url:
-                        # Use the requests and BeautifulSoup to get HTML content
-                        html_content = get_html_content(url)
-                        if html_content:
-                            soup = BeautifulSoup(html_content, 'html.parser')
-                            cleaned_html_content = str(soup)
-                            try:
-                                # Assuming smart_scrapers[i].run() processes the cleaned_html_content
-                                result = smart_scrapers[i].run(html_content=cleaned_html_content)
-                                results.append(result)
-                            except Exception as e:
-                                st.error(f"Error processing {url}: {e}")
+                for i, scraper in enumerate(smart_scrapers):
+                    try:
+                        result = scraper.run()
+                        results.append(result)
+                    except Exception as e:
+                        st.error(f"Error processing {url_list[i]}: {e}")
                 
                 # Create a DataFrame and export to Excel
                 if results:
@@ -86,4 +67,5 @@ if openai_access_token:
                     st.success("Scraping completed. You can download the results.")
                 else:
                     st.error("No results to display. Please enter valid URLs and prompts.")
+
 
