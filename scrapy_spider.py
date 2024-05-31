@@ -1,5 +1,6 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
 
 class MySpider(scrapy.Spider):
     name = 'my_spider'
@@ -18,12 +19,11 @@ class MySpider(scrapy.Spider):
         })
 
 def run_spider(urls):
-    process = CrawlerProcess(settings={
-        "LOG_LEVEL": "ERROR"
-    })
+    process = CrawlerProcess(settings=get_project_settings())
     spider = MySpider(urls=urls)
     process.crawl(spider)
-    process.start()
+    process.start()  # the script will block here until the crawling is finished
     return spider.results
+
 
 
