@@ -63,9 +63,12 @@ if openai_access_token:
                         if html_content:
                             soup = BeautifulSoup(html_content, 'html.parser')
                             cleaned_html_content = str(soup)
-                            # Assuming smart_scrapers[i].run() processes the cleaned_html_content
-                            result = smart_scrapers[i].run(html_content=cleaned_html_content)
-                            results.append(result)
+                            try:
+                                # Assuming smart_scrapers[i].run() processes the cleaned_html_content
+                                result = smart_scrapers[i].run(html_content=cleaned_html_content)
+                                results.append(result)
+                            except Exception as e:
+                                st.error(f"Error processing {url}: {e}")
                 
                 # Create a DataFrame and export to Excel
                 if results:
@@ -82,4 +85,5 @@ if openai_access_token:
                     )
                     st.success("Scraping completed. You can download the results.")
                 else:
-                    st.error("Please enter valid URLs and prompts.")
+                    st.error("No results to display. Please enter valid URLs and prompts.")
+
