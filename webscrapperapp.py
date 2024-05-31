@@ -17,8 +17,11 @@ if urls:
         with st.spinner("Scraping..."):
             try:
                 results = run_spider(url_list)
+                st.write("Scraping completed successfully.")  # Debug print
+                st.write(results)  # Debug print to show results
             except Exception as e:
                 st.error(f"An error occurred while scraping: {e}")
+                results = None
         
         if results:
             # Create a DataFrame and export to Excel
