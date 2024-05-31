@@ -1,4 +1,5 @@
 import streamlit as st
+import subprocess
 from scrapegraphai.graphs import SmartScraperGraph
 import pandas as pd
 from io import BytesIO
