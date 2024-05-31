@@ -1,31 +1,16 @@
 import streamlit as st
-from scrapy.crawler import CrawlerProcess
-from scrapy.utils.project import get_project_settings
+from scrapy_spider import run_spider
 import pandas as pd
 from io import BytesIO
 import openai
-import threading
-from scrapy_spider import MySpider
-from twisted.internet import reactor
-
-# Function to run the spider
-def run_spider(urls, prompts, results):
-    def f():
-        process = CrawlerProcess(get_project_settings())
-        spider = MySpider(urls=urls, prompts=prompts)
-        process.crawl(spider)
-        process.start()
-        results.extend(spider.results)
-        reactor.stop()
-    threading.Thread(target=f).start()
-    reactor.run(installSignalHandlers=False)
+import scrapy
 
 # Function to summarize data using OpenAI
 def summarize_data(openai_api_key, data):
     openai.api_key = openai_api_key
     summaries = []
     for item in data:
-        text_to_summarize = " ".join(item['Matches'])
+        text_to_summarize = item['Content']
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -36,7 +21,6 @@ def summarize_data(openai_api_key, data):
         summary = response['choices'][0]['message']['content']
         summaries.append({
             'URL': item['URL'],
-            'Prompt': item['Prompt'],
             'Summary': summary
         })
     return summaries
@@ -50,48 +34,41 @@ openai_api_key = st.text_input("OpenAI API Key", type="password")
 
 # Get the URLs of the websites to scrape
 urls = st.text_area("Enter the URLs of the websites you want to scrape, separated by commas")
-# Get the user prompts
-prompts = st.text_area("Enter the prompts for each website (keywords to search for), separated by commas (in the same order as the URLs)")
 
-if urls and prompts and openai_api_key:
+if urls and openai_api_key:
     url_list = [url.strip() for url in urls.split(",")]
-    prompt_list = [prompt.strip() for prompt in prompts.split(",")]
 
-    if len(url_list) != len(prompt_list):
-        st.error("The number of URLs and prompts must be equal.")
-    else:
-        if st.button("Scrape and Summarize"):
-            results = []
-            with st.spinner("Scraping..."):
-                run_spider(url_list, prompt_list, results)
+    if st.button("Scrape and Summarize"):
+        with st.spinner("Scraping..."):
+            results = run_spider(url_list)
+        
+        if results:
+            with st.spinner("Summarizing..."):
+                summarized_results = summarize_data(openai_api_key, results)
             
-            if results:
-                with st.spinner("Summarizing..."):
-                    summarized_results = summarize_data(openai_api_key, results)
-                
-                # Display summaries
-                st.write("## Summarized Results")
-                for summary in summarized_results:
-                    st.write(f"### {summary['URL']}")
-                    st.write(f"**Prompt:** {summary['Prompt']}")
-                    st.write(f"**Summary:** {summary['Summary']}")
-                    st.write("---")
+            # Display summaries
+            st.write("## Summarized Results")
+            for summary in summarized_results:
+                st.write(f"### {summary['URL']}")
+                st.write(f"**Summary:** {summary['Summary']}")
+                st.write("---")
 
-                # Create a DataFrame and export to Excel
-                df = pd.DataFrame(summarized_results)
-                output = BytesIO()
-                df.to_excel(output, index=False)
-                output.seek(0)
+            # Create a DataFrame and export to Excel
+            df = pd.DataFrame(summarized_results)
+            output = BytesIO()
+            df.to_excel(output, index=False)
+            output.seek(0)
 
-                st.download_button(
-                    label="Download Excel",
-                    data=output,
-                    file_name="scraping_summarized_results.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-                st.success("Scraping and summarization completed. You can download the results.")
-            else:
-                st.error("No results to display. Please enter valid URLs and prompts.")
+            st.download_button(
+                label="Download Excel",
+                data=output,
+                file_name="scraping_summarized_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("Scraping and summarization completed. You can download the results.")
+        else:
+            st.error("No results to display. Please enter valid URLs.")
+
 
 
 
