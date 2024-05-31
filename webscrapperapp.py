@@ -3,7 +3,6 @@ from scrapy_spider import run_spider
 import pandas as pd
 from io import BytesIO
 import openai
-import scrapy
 
 # Function to summarize data using OpenAI
 def summarize_data(openai_api_key, data):
@@ -68,6 +67,7 @@ if urls and openai_api_key:
             st.success("Scraping and summarization completed. You can download the results.")
         else:
             st.error("No results to display. Please enter valid URLs.")
+
 
 
 
