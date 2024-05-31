@@ -1,20 +1,24 @@
 import streamlit as st
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from twisted.internet import reactor
 import pandas as pd
 from io import BytesIO
 import openai
 import threading
 from scrapy_spider import MySpider
+from twisted.internet import reactor
 
 # Function to run the spider
-def run_spider(urls, prompts):
-    process = CrawlerProcess(get_project_settings())
-    spider = MySpider(urls=urls, prompts=prompts)
-    process.crawl(spider)
-    process.start()  # This will block until the crawling is finished
-    return spider.results
+def run_spider(urls, prompts, results):
+    def f():
+        process = CrawlerProcess(get_project_settings())
+        spider = MySpider(urls=urls, prompts=prompts)
+        process.crawl(spider)
+        process.start()
+        results.extend(spider.results)
+        reactor.stop()
+    threading.Thread(target=f).start()
+    reactor.run(installSignalHandlers=False)
 
 # Function to summarize data using OpenAI
 def summarize_data(openai_api_key, data):
@@ -57,8 +61,9 @@ if urls and prompts and openai_api_key:
         st.error("The number of URLs and prompts must be equal.")
     else:
         if st.button("Scrape and Summarize"):
+            results = []
             with st.spinner("Scraping..."):
-                results = run_spider(url_list, prompt_list)
+                run_spider(url_list, prompt_list, results)
             
             if results:
                 with st.spinner("Summarizing..."):
@@ -87,6 +92,7 @@ if urls and prompts and openai_api_key:
                 st.success("Scraping and summarization completed. You can download the results.")
             else:
                 st.error("No results to display. Please enter valid URLs and prompts.")
+
 
 
 
