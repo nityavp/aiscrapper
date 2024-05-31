@@ -1,10 +1,11 @@
 import streamlit as st
-import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
+from twisted.internet import reactor
 import pandas as pd
 from io import BytesIO
 import openai
+import threading
 from scrapy_spider import MySpider
 
 # Function to run the spider
